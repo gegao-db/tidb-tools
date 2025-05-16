@@ -46,16 +46,16 @@ func TestChunkUpdate(t *testing.T) {
 	}{
 		{
 			[]string{"a", "5", "6"},
-			"((`a` > ?) OR (`a` = ? AND `b` > ?)) AND ((`a` < ?) OR (`a` = ? AND `b` <= ?))",
-			[]interface{}{"5", "5", "3", "6", "6", "4"},
+			"((`a` > ?) AND (`a` < ?)) OR (`a` = ? AND `b` > ?) OR (`a` = ? AND `b` <= ?)",
+			[]interface{}{"5", "6", "5", "3", "6", "4"},
 		}, {
 			[]string{"b", "5", "6"},
-			"((`a` > ?) OR (`a` = ? AND `b` > ?)) AND ((`a` < ?) OR (`a` = ? AND `b` <= ?))",
-			[]interface{}{"1", "1", "5", "2", "2", "6"},
+			"((`a` > ?) AND (`a` < ?)) OR (`a` = ? AND `b` > ?) OR (`a` = ? AND `b` <= ?)",
+			[]interface{}{"1", "2", "1", "5", "2", "6"},
 		}, {
 			[]string{"c", "7", "8"},
-			"((`a` > ?) OR (`a` = ? AND `b` > ?) OR (`a` = ? AND `b` = ? AND `c` > ?)) AND ((`a` < ?) OR (`a` = ? AND `b` < ?) OR (`a` = ? AND `b` = ? AND `c` <= ?))",
-			[]interface{}{"1", "1", "3", "1", "3", "7", "2", "2", "4", "2", "4", "8"},
+			"((`a` > ?) AND (`a` < ?)) OR (`a` = ? AND `b` > ?) OR (`a` = ? AND `b` = ? AND `c` > ?) OR (`a` = ? AND `b` < ?) OR (`a` = ? AND `b` = ? AND `c` <= ?)",
+			[]interface{}{"1", "2", "1", "3", "1", "3", "7", "2", "4", "2", "4", "8"},
 		},
 	}
 
@@ -68,8 +68,8 @@ func TestChunkUpdate(t *testing.T) {
 
 	// the origin chunk is not changed
 	conditions, args := chunk.ToString("")
-	require.Equal(t, conditions, "((`a` > ?) OR (`a` = ? AND `b` > ?)) AND ((`a` < ?) OR (`a` = ? AND `b` <= ?))")
-	expectArgs := []interface{}{"1", "1", "3", "2", "2", "4"}
+	require.Equal(t, conditions, "((`a` > ?) AND (`a` < ?)) OR (`a` = ? AND `b` > ?) OR (`a` = ? AND `b` <= ?)")
+	expectArgs := []interface{}{"1", "2", "1", "3", "2", "4"}
 	require.Equal(t, args, expectArgs)
 
 	// test chunk update build by offset
@@ -110,15 +110,15 @@ func TestChunkToString(t *testing.T) {
 	}
 
 	conditions, args := chunk.ToString("")
-	require.Equal(t, conditions, "((`a` > ?) OR (`a` = ? AND `b` > ?) OR (`a` = ? AND `b` = ? AND `c` > ?)) AND ((`a` < ?) OR (`a` = ? AND `b` < ?) OR (`a` = ? AND `b` = ? AND `c` <= ?))")
-	expectArgs := []string{"1", "1", "3", "1", "3", "5", "2", "2", "4", "2", "4", "6"}
+	require.Equal(t, conditions, "((`a` > ?) AND (`a` < ?)) OR (`a` = ? AND `b` > ?) OR (`a` = ? AND `b` = ? AND `c` > ?) OR (`a` = ? AND `b` < ?) OR (`a` = ? AND `b` = ? AND `c` <= ?)")
+	expectArgs := []string{"1", "2", "1", "3", "1", "3", "5", "2", "4", "2", "4", "6"}
 	for i, arg := range args {
 		require.Equal(t, arg, expectArgs[i])
 	}
 
 	conditions, args = chunk.ToString("latin1")
-	require.Equal(t, conditions, "((`a` COLLATE 'latin1' > ?) OR (`a` COLLATE 'latin1' = ? AND `b` COLLATE 'latin1' > ?) OR (`a` COLLATE 'latin1' = ? AND `b` COLLATE 'latin1' = ? AND `c` COLLATE 'latin1' > ?)) AND ((`a` COLLATE 'latin1' < ?) OR (`a` COLLATE 'latin1' = ? AND `b` COLLATE 'latin1' < ?) OR (`a` COLLATE 'latin1' = ? AND `b` COLLATE 'latin1' = ? AND `c` COLLATE 'latin1' <= ?))")
-	expectArgs = []string{"1", "1", "3", "1", "3", "5", "2", "2", "4", "2", "4", "6"}
+	require.Equal(t, conditions, "((`a` COLLATE 'latin1' > ?) AND (`a` COLLATE 'latin1' < ?)) OR (`a` COLLATE 'latin1' = ? AND `b` COLLATE 'latin1' > ?) OR (`a` COLLATE 'latin1' = ? AND `b` COLLATE 'latin1' = ? AND `c` COLLATE 'latin1' > ?) OR (`a` COLLATE 'latin1' = ? AND `b` COLLATE 'latin1' < ?) OR (`a` COLLATE 'latin1' = ? AND `b` COLLATE 'latin1' = ? AND `c` COLLATE 'latin1' <= ?)")
+	expectArgs = []string{"1", "2", "1", "3", "1", "3", "5", "2", "4", "2", "4", "6"}
 	for i, arg := range args {
 		require.Equal(t, arg, expectArgs[i])
 	}
@@ -262,15 +262,15 @@ func TestChunkToString(t *testing.T) {
 	}
 
 	conditions, args = chunk.ToString("")
-	require.Equal(t, conditions, "(`a` = ?) AND ((`b` > ?) OR (`b` = ? AND `c` > ?)) AND ((`b` < ?) OR (`b` = ? AND `c` <= ?))")
-	expectArgs = []string{"1", "3", "3", "5", "4", "4", "5"}
+	require.Equal(t, conditions, "(`a` = ?) AND (((`b` > ?) AND (`b` < ?)) OR (`b` = ? AND `c` > ?) OR (`b` = ? AND `c` <= ?))")
+	expectArgs = []string{"1", "3", "4", "3", "5", "4", "5"}
 	for i, arg := range args {
 		require.Equal(t, arg, expectArgs[i])
 	}
 
 	conditions, args = chunk.ToString("latin1")
-	require.Equal(t, conditions, "(`a` COLLATE 'latin1' = ?) AND ((`b` COLLATE 'latin1' > ?) OR (`b` COLLATE 'latin1' = ? AND `c` COLLATE 'latin1' > ?)) AND ((`b` COLLATE 'latin1' < ?) OR (`b` COLLATE 'latin1' = ? AND `c` COLLATE 'latin1' <= ?))")
-	expectArgs = []string{"1", "3", "3", "5", "4", "4", "5"}
+	require.Equal(t, conditions, "(`a` COLLATE 'latin1' = ?) AND (((`b` COLLATE 'latin1' > ?) AND (`b` COLLATE 'latin1' < ?)) OR (`b` COLLATE 'latin1' = ? AND `c` COLLATE 'latin1' > ?) OR (`b` COLLATE 'latin1' = ? AND `c` COLLATE 'latin1' <= ?))")
+	expectArgs = []string{"1", "3", "4", "3", "5", "4", "5"}
 	for i, arg := range args {
 		require.Equal(t, arg, expectArgs[i])
 	}
@@ -495,12 +495,12 @@ func TestChunkInit(t *testing.T) {
 	}
 
 	InitChunks(chunks, Others, 1, 1, 0, "[123]", "[sdfds fsd fd gd]", 1)
-	require.Equal(t, chunks[0].Where, "((((`a` COLLATE '[123]' > ?) OR (`a` COLLATE '[123]' = ? AND `b` COLLATE '[123]' > ?) OR (`a` COLLATE '[123]' = ? AND `b` COLLATE '[123]' = ? AND `c` COLLATE '[123]' > ?)) AND ((`a` COLLATE '[123]' < ?) OR (`a` COLLATE '[123]' = ? AND `b` COLLATE '[123]' < ?) OR (`a` COLLATE '[123]' = ? AND `b` COLLATE '[123]' = ? AND `c` COLLATE '[123]' <= ?))) AND ([sdfds fsd fd gd]))")
-	require.Equal(t, chunks[0].Args, []interface{}{"1", "1", "3", "1", "3", "5", "2", "2", "4", "2", "4", "6"})
+	require.Equal(t, chunks[0].Where, "((((`a` COLLATE '[123]' > ?) AND (`a` COLLATE '[123]' < ?)) OR (`a` COLLATE '[123]' = ? AND `b` COLLATE '[123]' > ?) OR (`a` COLLATE '[123]' = ? AND `b` COLLATE '[123]' = ? AND `c` COLLATE '[123]' > ?) OR (`a` COLLATE '[123]' = ? AND `b` COLLATE '[123]' < ?) OR (`a` COLLATE '[123]' = ? AND `b` COLLATE '[123]' = ? AND `c` COLLATE '[123]' <= ?)) AND ([sdfds fsd fd gd]))")
+	require.Equal(t, chunks[0].Args, []interface{}{"1", "2", "1", "3", "1", "3", "5", "2", "4", "2", "4", "6"})
 	require.Equal(t, chunks[0].Type, Others)
 	InitChunk(chunks[1], Others, 2, 2, "[456]", "[dsfsdf]")
-	require.Equal(t, chunks[1].Where, "((((`a` COLLATE '[456]' > ?) OR (`a` COLLATE '[456]' = ? AND `b` COLLATE '[456]' > ?) OR (`a` COLLATE '[456]' = ? AND `b` COLLATE '[456]' = ? AND `c` COLLATE '[456]' > ?)) AND ((`a` COLLATE '[456]' < ?) OR (`a` COLLATE '[456]' = ? AND `b` COLLATE '[456]' < ?) OR (`a` COLLATE '[456]' = ? AND `b` COLLATE '[456]' = ? AND `c` COLLATE '[456]' <= ?))) AND ([dsfsdf]))")
-	require.Equal(t, chunks[1].Args, []interface{}{"2", "2", "4", "2", "4", "6", "3", "3", "5", "3", "5", "7"})
+	require.Equal(t, chunks[1].Where, "((((`a` COLLATE '[456]' > ?) AND (`a` COLLATE '[456]' < ?)) OR (`a` COLLATE '[456]' = ? AND `b` COLLATE '[456]' > ?) OR (`a` COLLATE '[456]' = ? AND `b` COLLATE '[456]' = ? AND `c` COLLATE '[456]' > ?) OR (`a` COLLATE '[456]' = ? AND `b` COLLATE '[456]' < ?) OR (`a` COLLATE '[456]' = ? AND `b` COLLATE '[456]' = ? AND `c` COLLATE '[456]' <= ?)) AND ([dsfsdf]))")
+	require.Equal(t, chunks[1].Args, []interface{}{"2", "3", "2", "4", "2", "4", "6", "3", "5", "3", "5", "7"})
 	require.Equal(t, chunks[1].Type, Others)
 }
 
@@ -515,22 +515,22 @@ func TestChunkCopyAndUpdate(t *testing.T) {
 	chunk.Update("c", "10", "11", true, false)
 
 	conditions, args := chunk.ToString("")
-	require.Equal(t, conditions, "((`a` > ?) OR (`a` = ? AND `b` > ?) OR (`a` = ? AND `b` = ? AND `c` > ?)) AND ((`a` < ?) OR (`a` = ? AND `b` < ?) OR (`a` = ? AND `b` = ? AND `c` <= ?))")
-	require.Equal(t, args, []interface{}{"2", "2", "4", "2", "4", "10", "3", "3", "9", "3", "9", "7"})
+	require.Equal(t, conditions, "((`a` > ?) AND (`a` < ?)) OR (`a` = ? AND `b` > ?) OR (`a` = ? AND `b` = ? AND `c` > ?) OR (`a` = ? AND `b` < ?) OR (`a` = ? AND `b` = ? AND `c` <= ?)")
+	require.Equal(t, args, []interface{}{"2", "3", "2", "4", "2", "4", "10", "3", "9", "3", "9", "7"})
 
 	chunk2 := chunk.CopyAndUpdate("a", "4", "6", true, true)
 	conditions, args = chunk2.ToString("")
-	require.Equal(t, conditions, "((`a` > ?) OR (`a` = ? AND `b` > ?) OR (`a` = ? AND `b` = ? AND `c` > ?)) AND ((`a` < ?) OR (`a` = ? AND `b` < ?) OR (`a` = ? AND `b` = ? AND `c` <= ?))")
-	require.Equal(t, args, []interface{}{"4", "4", "4", "4", "4", "10", "6", "6", "9", "6", "9", "7"})
+	require.Equal(t, conditions, "((`a` > ?) AND (`a` < ?)) OR (`a` = ? AND `b` > ?) OR (`a` = ? AND `b` = ? AND `c` > ?) OR (`a` = ? AND `b` < ?) OR (`a` = ? AND `b` = ? AND `c` <= ?)")
+	require.Equal(t, args, []interface{}{"4", "6", "4", "4", "4", "4", "10", "6", "9", "6", "9", "7"})
 	_, args = chunk.ToString("")
 	// `Copy` use the same []string
-	require.Equal(t, args, []interface{}{"2", "2", "4", "2", "4", "10", "3", "3", "9", "3", "9", "7"})
+	require.Equal(t, args, []interface{}{"2", "3", "2", "4", "2", "4", "10", "3", "9", "3", "9", "7"})
 
 	InitChunk(chunk, Others, 2, 2, "[324]", "[543]")
 	chunk3 := chunk.Clone()
 	chunk3.Update("a", "2", "3", true, true)
-	require.Equal(t, chunk3.Where, "((((`a` COLLATE '[324]' > ?) OR (`a` COLLATE '[324]' = ? AND `b` COLLATE '[324]' > ?) OR (`a` COLLATE '[324]' = ? AND `b` COLLATE '[324]' = ? AND `c` COLLATE '[324]' > ?)) AND ((`a` COLLATE '[324]' < ?) OR (`a` COLLATE '[324]' = ? AND `b` COLLATE '[324]' < ?) OR (`a` COLLATE '[324]' = ? AND `b` COLLATE '[324]' = ? AND `c` COLLATE '[324]' <= ?))) AND ([543]))")
-	require.Equal(t, chunk3.Args, []interface{}{"2", "2", "4", "2", "4", "10", "3", "3", "9", "3", "9", "7"})
+	require.Equal(t, chunk3.Where, "((((`a` COLLATE '[324]' > ?) AND (`a` COLLATE '[324]' < ?)) OR (`a` COLLATE '[324]' = ? AND `b` COLLATE '[324]' > ?) OR (`a` COLLATE '[324]' = ? AND `b` COLLATE '[324]' = ? AND `c` COLLATE '[324]' > ?) OR (`a` COLLATE '[324]' = ? AND `b` COLLATE '[324]' < ?) OR (`a` COLLATE '[324]' = ? AND `b` COLLATE '[324]' = ? AND `c` COLLATE '[324]' <= ?)) AND ([543]))")
+	require.Equal(t, chunk3.Args, []interface{}{"2", "3", "2", "4", "2", "4", "10", "3", "9", "3", "9", "7"})
 	require.Equal(t, chunk3.Type, Others)
 }
 

@@ -303,34 +303,38 @@ func (c *Range) ToString(collation string) (string, []interface{}) {
 		}
 	}
 
+	rangeCondition := make([]string, 0, 1)
+	rangeArgs := make([]interface{}, 0, 1)
+
+	if len(lowerCondition) > 0 && len(upperCondition) > 0 {
+		rangeCondition = append(rangeCondition, fmt.Sprintf("(%s AND %s)", lowerCondition[0], upperCondition[0]))
+		rangeArgs = append(rangeArgs, lowerArgs[0], upperArgs[0])
+		lowerCondition = lowerCondition[1:]
+		upperCondition = upperCondition[1:]
+		lowerArgs = lowerArgs[1:]
+		upperArgs = upperArgs[1:]
+	}
+	if len(lowerCondition) > 0 {
+		rangeCondition = append(rangeCondition, lowerCondition...)
+		rangeArgs = append(rangeArgs, lowerArgs...)
+	}
+	if len(upperCondition) > 0 {
+		rangeCondition = append(rangeCondition, upperCondition...)
+		rangeArgs = append(rangeArgs, upperArgs...)
+	}
+
 	if len(sameCondition) == 0 {
-		if len(upperCondition) == 0 && len(lowerCondition) == 0 {
+		if len(rangeCondition) == 0 {
 			return "TRUE", nil
 		}
 
-		if len(upperCondition) == 0 {
-			return strings.Join(lowerCondition, " OR "), lowerArgs
-		}
-
-		if len(lowerCondition) == 0 {
-			return strings.Join(upperCondition, " OR "), upperArgs
-		}
-
-		return fmt.Sprintf("(%s) AND (%s)", strings.Join(lowerCondition, " OR "), strings.Join(upperCondition, " OR ")), append(lowerArgs, upperArgs...)
+		return strings.Join(rangeCondition, " OR "), rangeArgs
 	} else {
-		if len(upperCondition) == 0 && len(lowerCondition) == 0 {
+		if len(rangeCondition) == 0 {
 			return strings.Join(sameCondition, " AND "), sameArgs
 		}
 
-		if len(upperCondition) == 0 {
-			return fmt.Sprintf("(%s) AND (%s)", strings.Join(sameCondition, " AND "), strings.Join(lowerCondition, " OR ")), append(sameArgs, lowerArgs...)
-		}
-
-		if len(lowerCondition) == 0 {
-			return fmt.Sprintf("(%s) AND (%s)", strings.Join(sameCondition, " AND "), strings.Join(upperCondition, " OR ")), append(sameArgs, upperArgs...)
-		}
-
-		return fmt.Sprintf("(%s) AND (%s) AND (%s)", strings.Join(sameCondition, " AND "), strings.Join(lowerCondition, " OR "), strings.Join(upperCondition, " OR ")), append(append(sameArgs, lowerArgs...), upperArgs...)
+		return fmt.Sprintf("(%s) AND (%s)", strings.Join(sameCondition, " AND "), strings.Join(rangeCondition, " OR ")), append(sameArgs, rangeArgs...)
 	}
 }
 
